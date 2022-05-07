@@ -11,12 +11,28 @@ app.use(express.json());
 // MongoDB
 const uri = "mongodb+srv://khokan:G0cyMeBUbvZU5HD8@cluster0.0mqvp.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
-client.connect(err => {
-    const collection = client.db("test").collection("devices");
-    // perform actions on the collection object
-    console.log('db connected');
-    client.close();
-});
+
+// Main Function
+async function run() {
+    try {
+        await client.connect();
+        const userCollection = client.db("production").collection("product");
+
+        // Get Products from DB
+        app.get('/product', async (req, res) => {
+            const query = {};
+            const cursor = userCollection.find(query);
+            const product = await cursor.toArray();
+            res.send(product);
+            console.log('Get Product from DB');
+        });
+
+    } finally {
+
+    }
+}
+
+run().catch(console.dir);
 
 
 // Server Home Page
