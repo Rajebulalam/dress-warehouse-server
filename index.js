@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const app = express();
@@ -12,6 +13,15 @@ app.use(express.json());
 // MongoDB
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.0mqvp.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+
+// Verify Token
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ message: 'Unauthorized' });
+    }
+    next();
+}
 
 // Main Function
 async function run() {
@@ -68,13 +78,22 @@ async function run() {
         });
 
         // Get Product by Email
-        app.get('/items', async (req, res) => {
+        app.get('/items', verifyJWT, async (req, res) => {
             const email = req.query.email;
             const query = { email: email };
             const cursor = userCollection.find(query);
             const result = await cursor.toArray();
             res.send(result);
-        })
+        });
+
+        // Auth
+        app.post('/login', async (req, res) => {
+            const user = req.body;
+            const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+                expiresIn: '10d'
+            });
+            res.send({ accessToken });
+        });
 
     } finally {
 
@@ -86,12 +105,9 @@ run().catch(console.dir);
 // Server Home Page
 app.get('/', async (req, res) => {
     res.send('Hello World');
-})
+});
 
 // Server Listen
 app.listen(port, () => {
     console.log('Server is running', port);
-})
-
-// User : khokan
-// Pass : G0cyMeBUbvZU5HD8
+});
